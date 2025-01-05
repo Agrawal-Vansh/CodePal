@@ -53,12 +53,12 @@ function EditorPage() {
     <>
    <div className="flex h-screen  w-screen">
       {/* Member Section */}
-      <div className="w-1/5 bg-gray-800 ">
+      <div className="md:w-1/5 w-2/5 bg-gray-800 ">
         <Dashboard  users={users}/>
       </div>
 
       {/* Editor Section */}
-      <div className="w-4/5 bg-gray-50">
+      <div className="md:w-4/5 w-3/5 bg-gray-50">
         <Editor />
       </div>
     </div>
