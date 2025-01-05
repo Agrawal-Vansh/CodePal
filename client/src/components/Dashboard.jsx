@@ -2,17 +2,17 @@ import {React,useState} from 'react';
 import { FaRegCopy } from "react-icons/fa";
 import { IoMdExit } from "react-icons/io";
 import Logo from '../assets/Logo.png';
-import Client from './Client';
+import User from './User';
 
-function Dashboard() {
-    const [clients, setClients] = useState([{"socketId":"1","username":"Vansh Agrawal"},{"socketId":"2","username":"Ayush Singhal"}]);
+function Dashboard({users}) {
+   
   return (
     <>
       <div className="bg-gray-800 text-white flex flex-col h-full w-full p-4">
         <img src={Logo} alt="Logo" className="h-24" />
         <div className="flex flex-col overflow-auto">
-        {clients.map((client) => (
-            <Client key={client.socketId} username={client.username} />
+        {users.map((user) => (
+            <User key={user.socketId} username={user.username} />
         ))}
         </div>
         <div className="flex flex-col gap-2 mt-auto">

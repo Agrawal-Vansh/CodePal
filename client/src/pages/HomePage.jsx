@@ -18,7 +18,7 @@ function HomePage() {
       toast.error('Room ID must be at least 5 characters long');
       return;
     }
-    navigate(`/editor/${roomId}`,{state:userName})
+    navigate(`/editor/${roomId}`,{state:{userName}})
     toast.success('Room Created  Successfully');
   };
 

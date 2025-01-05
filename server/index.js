@@ -4,8 +4,6 @@ import http from "http";
 import cors from 'cors'
 import dotenv from 'dotenv';
 dotenv.config()
-console.log(process.env.CORS_ORIGIN);
-
 
 const corsOptions = {
   origin: process.env.CORS_ORIGIN  , // Specify your allowed frontend origins as an environment variable
@@ -24,11 +22,36 @@ const io = new SocketIOServer(server, {
 app.use(cors(corsOptions));
 
 
-
-
-
+const userSocketMap = {};
+const getAllConnectedUsers = (roomId) =>{ 
+  
+  return io.sockets.adapter.rooms.get(roomId) ?
+  [...io.sockets.adapter.rooms.get(roomId)].map((socketId) =>{
+      return  {
+        socketId,
+        username:userSocketMap[socketId]
+      }}) 
+  : []
+};
 io.on("connection", (socket) => {
   console.log(`A user connected with socket id ${socket.id}`);
+
+  socket.on("join", ({roomId,username}) => {
+    // console.log(`User with socket id ${socket.id} joined room ${roomId} with username ${username}`);
+    
+    userSocketMap[socket.id] = username;
+    socket.join(roomId);
+    const users=getAllConnectedUsers(roomId);
+    // console.log(user);
+    users.forEach(({socketId})=>{
+      io.to(socketId).emit("newUserJoined", {
+        users,
+        username,
+        socketId:socket.id
+      });
+    })
+
+  });
   
   socket.on("disconnect", () => {
     console.log(`User disconnected with socket id ${socket.id}`);

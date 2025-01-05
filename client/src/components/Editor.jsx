@@ -6,7 +6,6 @@ import MonacoEditor from '@monaco-editor/react';
 function Editor() {
   const [language, setLanguage] = useState("cpp"); // Default language: C++
   const [code, setCode] = useState("// Write your code here!");
-
   const handleEditorChange = (value) => {
     setCode(value); // Update code state on editor change
   };

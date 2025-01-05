@@ -1,6 +1,6 @@
 import React from 'react'
 import Avatar from 'react-avatar'
-function Client({username}) {
+function User({username}) {
 
   return (
     <>
@@ -12,4 +12,4 @@ function Client({username}) {
   )
 }
 
-export default Client
+export default User
