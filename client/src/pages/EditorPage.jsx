@@ -4,9 +4,9 @@ import Editor from '../components/Editor'
 function EditorPage() {
   return (
     <>
-   <div className="flex h-screen w-screen">
+   <div className="flex h-screen  w-screen">
       {/* Member Section */}
-      <div className="w-1/5 bg-gray-800">
+      <div className="w-1/5 bg-gray-800 ">
         <Dashboard />
       </div>
 
