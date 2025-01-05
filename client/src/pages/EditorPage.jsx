@@ -22,10 +22,10 @@ function EditorPage() {
                 navigate("/home");
                 
             };
-            if(!location.state)
-            {
+            if(!location.state){
               return <Navigate to="/home"/>
             }
+
             socketRef.current.emit('join', {
                 roomId,
                 username: location.state?.userName
@@ -37,8 +37,17 @@ function EditorPage() {
               }
               setUsers(users);
              });
+            socketRef.current.on("disconnected", ({ socketId, username }) => {
+              toast.error(`${username} left the room`);
+              setUsers((prevUsers) => prevUsers.filter((user) => user.socketId !== socketId));
+              });
       }
         init();
+        return ()=>{
+        socketRef.current.disconnect();
+        socketRef.current.off("newUserJoined");
+        socketRef.current.off("disconnected");
+        }
     },[]);
   return (
     <>

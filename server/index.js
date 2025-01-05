@@ -53,10 +53,19 @@ io.on("connection", (socket) => {
 
   });
   
-  socket.on("disconnect", () => {
+  socket.on("disconnecting",()=>{
     console.log(`User disconnected with socket id ${socket.id}`);
     
-  });
+    const rooms=[...socket.rooms];
+    rooms.forEach((roomId)=>{
+      socket.in(roomId).emit("disconnected",{
+        socketId:socket.id,
+        username:userSocketMap[socket.id]
+      });
+    });
+    delete userSocketMap[socket.id];
+    socket.leave();
+  })
 });
 
 server.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));
