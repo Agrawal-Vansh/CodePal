@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState} from 'react';
 import { v4 as uuidv4 } from 'uuid'; // Import v4 for generating unique IDs
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -25,9 +25,7 @@ function HomePage() {
   const handleCreateRoom = () => {
     const newRoomId = uuidv4(); 
     setRoomId(newRoomId); 
-    toast.success("Room ID generated Successfully ")
-
-    setTimeout(() => navigate(`/editor/${roomId}`,{state:userName}), 1000);
+    toast.success("Room ID generated Successfully ");
   };
 
   return (

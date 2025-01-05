@@ -1,7 +1,23 @@
-import React from 'react'
+import React ,{useRef,useEffect}from 'react'
+import { useLocation,useParams } from 'react-router-dom';
 import Dashboard from '../components/Dashboard'
 import Editor from '../components/Editor'
+import socket from './Socket';
 function EditorPage() {
+    const socketRef=useRef(null);
+    const location=useLocation();
+    const {roomId}=useParams();
+    useEffect(()=>{
+        const init=async()=>
+        {
+            socketRef.current=await socket();
+            socketRef.current.emit('join', {
+                roomId,
+                username: location.state?.username
+              });
+        }
+        init();
+    },[]);
   return (
     <>
    <div className="flex h-screen  w-screen">
