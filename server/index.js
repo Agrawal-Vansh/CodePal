@@ -70,6 +70,10 @@ io.on("connection", (socket) => {
     // console.log(`Code change in room ${roomId} with language ${language}`);
     socket.to(roomId).emit("codeUpdate", { code, language });
   });
+  socket.on("syncCode", ({ socketId, code, language }) => {
+    // console.log(`Code change in room ${roomId} with language ${language}`);
+    io.to(socketId).emit("syncCode", { code, language });
+  });
 });
 
 server.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));
