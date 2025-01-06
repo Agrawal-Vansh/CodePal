@@ -66,6 +66,10 @@ io.on("connection", (socket) => {
     delete userSocketMap[socket.id];
     socket.leave();
   })
+  socket.on("codeChange", ({ roomId, code, language }) => {
+    // console.log(`Code change in room ${roomId} with language ${language}`);
+    socket.to(roomId).emit("codeUpdate", { code, language });
+  });
 });
 
 server.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));

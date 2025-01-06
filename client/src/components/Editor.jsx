@@ -1,14 +1,34 @@
-import React, { useState } from "react";
-// import { MonacoEditor } from "@monaco-editor/react";
-import MonacoEditor from '@monaco-editor/react';
+import React, { useState, useEffect } from "react";
+import MonacoEditor from "@monaco-editor/react";
 
-
-function Editor() {
-  const [language, setLanguage] = useState("cpp"); // Default language: C++
+function Editor({ socketRef, roomId }) {
+  const [language, setLanguage] = useState("cpp");
   const [code, setCode] = useState("// Write your code here!");
+  const [isLocalChange, setIsLocalChange] = useState(false);
+
   const handleEditorChange = (value) => {
-    setCode(value); // Update code state on editor change
+    setIsLocalChange(true);
+    setCode(value);
   };
+
+  useEffect(() => {
+    if (socketRef.current) {
+      const handleCodeUpdate = ({ code, language }) => {
+        if (!isLocalChange) {
+          setCode(code);
+          setLanguage(language);
+        }
+        setIsLocalChange(false);
+      };
+
+      socketRef.current.emit("codeChange", { roomId, code, language });
+      socketRef.current.on("codeUpdate", handleCodeUpdate);
+
+      return () => {
+        socketRef.current.off("codeUpdate", handleCodeUpdate);
+      };
+    }
+  }, [socketRef, roomId, code, language, isLocalChange]);
 
   return (
     <div className="p-4">
@@ -18,23 +38,25 @@ function Editor() {
         className="mb-4 p-2 border rounded"
       >
         <option value="cpp">C++</option>
+        <option value="java">Java</option>
+        <option value="python">Python</option>
         <option value="javascript">JavaScript</option>
         <option value="typescript">TypeScript</option>
         <option value="html">HTML</option>
         <option value="css">CSS</option>
       </select>
 
-      <div className="h-screen  rounded overflow-hidden">
+      <div className="h-screen rounded overflow-hidden">
         <MonacoEditor
           height="100%"
-          defaultLanguage={language}
-          defaultValue={code}
-          theme="vs-dark" // Dark theme for the editor
-          onChange={handleEditorChange} // Handle changes to the editor content
+          language={language}
+          value={code}
+          theme="vs-dark"
+          onChange={handleEditorChange}
           options={{
             fontSize: 14,
-            automaticLayout: true, // Adjust editor layout dynamically
-            minimap: { enabled: false }, // Disable minimap for simplicity
+            automaticLayout: true,
+            minimap: { enabled: false },
           }}
         />
       </div>

@@ -59,7 +59,7 @@ function EditorPage() {
 
       {/* Editor Section */}
       <div className="md:w-4/5 w-3/5 bg-gray-50">
-        <Editor />
+        <Editor socketRef={socketRef} roomId={roomId}/>
       </div>
     </div>
     </>
