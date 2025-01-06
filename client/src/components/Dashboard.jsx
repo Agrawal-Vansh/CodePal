@@ -1,11 +1,15 @@
 import {React,useState} from 'react';
 import { FaRegCopy } from "react-icons/fa";
 import { IoMdExit } from "react-icons/io";
+import { toast } from 'react-hot-toast';
 import Logo from '../assets/Logo.png';
 import User from './User';
 
-function Dashboard({users}) {
-   
+function Dashboard({users,roomId}) {
+   const handleCopyRoomId = () => {
+    navigator.clipboard.writeText(roomId);
+    toast.success('Room ID copied to clipboard');
+   };
   return (
     <>
       <div className="bg-gray-800 text-white flex flex-col h-full w-full p-4">
@@ -18,6 +22,7 @@ function Dashboard({users}) {
         <div className="flex flex-col gap-2 mt-auto">
             <hr/>
           <button
+            onClick={handleCopyRoomId}
             className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-300 flex items-center justify-center gap-2"
           >
             Copy Room ID

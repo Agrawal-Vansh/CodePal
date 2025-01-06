@@ -54,7 +54,7 @@ function EditorPage() {
    <div className="flex h-screen  w-screen">
       {/* Member Section */}
       <div className="md:w-1/5 w-2/5 bg-gray-800 ">
-        <Dashboard  users={users}/>
+        <Dashboard  users={users} roomId={roomId}/>
       </div>
 
       {/* Editor Section */}
