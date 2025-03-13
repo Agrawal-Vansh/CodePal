@@ -23,6 +23,8 @@ app.use(cors(corsOptions));
 
 
 const userSocketMap = {};
+const roomData = {}; // Stores code and language for each room
+
 const getAllConnectedUsers = (roomId) =>{ 
   
   return io.sockets.adapter.rooms.get(roomId) ?
@@ -39,6 +41,11 @@ io.on("connection", (socket) => {
   socket.on("join", ({roomId,username}) => {
     // console.log(`User with socket id ${socket.id} joined room ${roomId} with username ${username}`);
     
+    if (!roomData[roomId]) {
+      roomData[roomId] = { code: "// Write your code here!", language: "cpp" };
+    }
+
+
     userSocketMap[socket.id] = username;
     socket.join(roomId);
     const users=getAllConnectedUsers(roomId);
@@ -50,6 +57,21 @@ io.on("connection", (socket) => {
         socketId:socket.id
       });
     })
+    console.log(roomData[roomId]);
+    // Send the current room code and language to the newly joined user
+    if (roomData[roomId]) {
+      socket.emit("initializeCode", roomData[roomId]); // Check this line
+      console.log("I am sending code");
+      
+    }
+
+    // setTimeout(() => {
+    //   if (roomData[roomId]) {
+    //     // socket.emit("initializeCode", roomData[roomId]);
+    //     io.to(roomId).emit("initializeCode", roomData[roomId]);
+    //   }
+    // }, 100);
+    
 
   });
   
@@ -68,12 +90,13 @@ io.on("connection", (socket) => {
   })
   socket.on("codeChange", ({ roomId, code, language }) => {
     // console.log(`Code change in room ${roomId} with language ${language}`);
+      // Update room data
+      if (roomData[roomId]) {
+        roomData[roomId] = { code, language };
+      }
     socket.to(roomId).emit("codeUpdate", { code, language });
   });
-  socket.on("syncCode", ({ socketId, code, language }) => {
-    // console.log(`Code change in room ${roomId} with language ${language}`);
-    io.to(socketId).emit("syncCode", { code, language });
-  });
+ 
 });
 
 server.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));

@@ -20,12 +20,26 @@ function Editor({ socketRef, roomId }) {
         }
         setIsLocalChange(false);
       };
+      const handleInitializeCode = (data) => {
+        // console.log("I am initailizing code");
+        console.log("data received is "+ JSON.stringify(data));
+        const { code, language }=data;
+
+        
+        setCode(code);
+        setLanguage(language);
+      };
 
       socketRef.current.emit("codeChange", { roomId, code, language });
       socketRef.current.on("codeUpdate", handleCodeUpdate);
+      console.log("Setting up listener for initializeCode");
+      socketRef.current.on("initializeCode", handleInitializeCode);
+
 
       return () => {
         socketRef.current.off("codeUpdate", handleCodeUpdate);
+        socketRef.current.off("initializeCode", handleInitializeCode);
+
       };
     }
   }, [socketRef, roomId, code, language, isLocalChange]);
