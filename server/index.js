@@ -94,7 +94,7 @@ io.on("connection", (socket) => {
       if (roomData[roomId]) {
         roomData[roomId] = { code, language };
       }
-    socket.to(roomId).emit("codeUpdate", { code, language });
+    socket.in(roomId).emit("codeUpdate", { code, language });
   });
  
 });
