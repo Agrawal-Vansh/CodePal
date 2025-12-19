@@ -9,18 +9,18 @@ function HomePage() {
   const [userName, setUserName] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    if (roomId.trim() === '' || userName.trim() === '') {
-      toast.error('Please enter both Room ID and Username');
-      return;
-    }
-    if (roomId.trim().length < 5) {
-      toast.error('Room ID must be at least 5 characters long');
-      return;
-    }
-    navigate(`/editor/${roomId}`,{state:{userName}})
-    toast.success('Room Created  Successfully');
-  };
+const handleLogin = () => {
+  if (!roomId.trim() || !userName.trim()) {
+    toast.error("Please enter both Room ID and Username");
+    return;
+  }
+
+  navigate(`/editor/${roomId}`, {
+    state: { userName },
+  });
+
+  toast.success("Joined room successfully");
+};
 
   const handleCreateRoom = () => {
     const newRoomId = uuidv4(); 

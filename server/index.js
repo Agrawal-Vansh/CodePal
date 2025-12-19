@@ -1,102 +1,140 @@
 import express from "express";
-import { Server as SocketIOServer } from "socket.io";
 import http from "http";
-import cors from 'cors'
-import dotenv from 'dotenv';
-dotenv.config()
+import { Server } from "socket.io";
+import cors from "cors";
+import dotenv from "dotenv";
 
-const corsOptions = {
-  origin: process.env.CORS_ORIGIN  , // Specify your allowed frontend origins as an environment variable
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials:true,
-  optionsSuccessStatus: 204 // Some legacy browsers (IE11, various SmartTVs) choke on 204
-};
+dotenv.config();
 
+/* ================= CONFIG ================= */
+
+const PORT = process.env.PORT || 3000;
+const CLIENT_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
+
+/* ================= APP ================= */
 
 const app = express();
 const server = http.createServer(app);
-const io = new SocketIOServer(server, {
-  cors:corsOptions
+
+const io = new Server(server, {
+  cors: {
+    origin: CLIENT_ORIGIN,
+    credentials: true,
+  },
 });
 
-app.use(cors(corsOptions));
+app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
 
+/* ================= STATE ================= */
 
+// socketId -> username
 const userSocketMap = {};
-const roomData = {}; // Stores code and language for each room
 
-const getAllConnectedUsers = (roomId) =>{ 
-  
-  return io.sockets.adapter.rooms.get(roomId) ?
-  [...io.sockets.adapter.rooms.get(roomId)].map((socketId) =>{
-      return  {
-        socketId,
-        username:userSocketMap[socketId]
-      }}) 
-  : []
+// roomId -> { code, language, version }
+const roomData = {};
+
+/* ================= HELPERS ================= */
+
+const getUsersInRoom = (roomId) => {
+  const room = io.sockets.adapter.rooms.get(roomId);
+  if (!room) return [];
+
+  return [...room].map((socketId) => ({
+    socketId,
+    username: userSocketMap[socketId],
+  }));
 };
+
+/* ================= SOCKET ================= */
+
 io.on("connection", (socket) => {
-  console.log(`A user connected with socket id ${socket.id}`);
+  console.log("🟢 CONNECT:", socket.id);
 
-  socket.on("join", ({roomId,username}) => {
-    // console.log(`User with socket id ${socket.id} joined room ${roomId} with username ${username}`);
-    
-    if (!roomData[roomId]) {
-      roomData[roomId] = { code: "// Write your code here!", language: "cpp" };
-    }
-
+  /* ---------- JOIN ---------- */
+  socket.on("join", ({ roomId, username }) => {
+    console.log("➡️ JOIN:", socket.id, roomId, username);
 
     userSocketMap[socket.id] = username;
     socket.join(roomId);
-    const users=getAllConnectedUsers(roomId);
-    // console.log(user);
-    users.forEach(({socketId})=>{
-      io.to(socketId).emit("newUserJoined", {
-        users,
-        username,
-        socketId:socket.id
-      });
-    })
-    console.log(roomData[roomId]);
-    // Send the current room code and language to the newly joined user
-    if (roomData[roomId]) {
-      socket.emit("initializeCode", roomData[roomId]); // Check this line
-      console.log("I am sending code");
-      
+
+    // Initialize room if not exists
+    if (!roomData[roomId]) {
+      roomData[roomId] = {
+        code: "// Write your code here!",
+        language: "cpp",
+        version: 0,
+      };
+      console.log("🆕 ROOM CREATED:", roomId);
     }
 
-    // setTimeout(() => {
-    //   if (roomData[roomId]) {
-    //     // socket.emit("initializeCode", roomData[roomId]);
-    //     io.to(roomId).emit("initializeCode", roomData[roomId]);
-    //   }
-    // }, 100);
-    
+    // Send initial state ONLY to joining user
+    socket.emit("initializeCode", roomData[roomId]);
 
-  });
-  
-  socket.on("disconnecting",()=>{
-    console.log(`User disconnected with socket id ${socket.id}`);
-    
-    const rooms=[...socket.rooms];
-    rooms.forEach((roomId)=>{
-      socket.in(roomId).emit("disconnected",{
-        socketId:socket.id,
-        username:userSocketMap[socket.id]
-      });
+    // Notify everyone in room
+    io.to(roomId).emit("newUserJoined", {
+      users: getUsersInRoom(roomId),
+      joinedUser: username,
     });
-    delete userSocketMap[socket.id];
-    socket.leave();
-  })
-  socket.on("codeChange", ({ roomId, code, language }) => {
-    // console.log(`Code change in room ${roomId} with language ${language}`);
-      // Update room data
-      if (roomData[roomId]) {
-        roomData[roomId] = { code, language };
-      }
-    socket.in(roomId).emit("codeUpdate", { code, language });
   });
- 
+
+  /* ---------- CODE CHANGE ---------- */
+  socket.on("codeChange", ({ roomId, code, language, version }) => {
+    const room = roomData[roomId];
+
+    if (!room) {
+      console.warn("⚠️ codeChange before join:", roomId);
+      return;
+    }
+
+    console.log("✏️ CODE CHANGE");
+    console.log("   socket:", socket.id);
+    console.log("   client version:", version);
+    console.log("   server version:", room.version);
+
+    // Reject stale updates
+    if (version !== room.version) {
+      console.log("⛔ STALE UPDATE → syncRequired");
+      socket.emit("syncRequired", room);
+      return;
+    }
+
+    // Accept update
+    roomData[roomId] = {
+      code,
+      language,
+      version: room.version + 1,
+    };
+
+    console.log("✅ ACCEPTED → new version:", roomData[roomId].version);
+
+    // Broadcast authoritative state
+    io.to(roomId).emit("codeUpdate", roomData[roomId]);
+  });
+
+  /* ---------- DISCONNECT ---------- */
+  socket.on("disconnecting", () => {
+    const username = userSocketMap[socket.id];
+
+    for (const roomId of socket.rooms) {
+      if (roomId === socket.id) continue;
+
+      socket.to(roomId).emit("disconnected", {
+        socketId: socket.id,
+        username,
+      });
+    }
+
+    delete userSocketMap[socket.id];
+  });
+
+  socket.on("disconnect", () => {
+    console.log("🔴 DISCONNECT:", socket.id);
+  });
 });
 
-server.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));
+/* ================= START ================= */
+
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on ${PORT}`);
+  console.log(`🌍 CORS allowed: ${CLIENT_ORIGIN}`);
+});

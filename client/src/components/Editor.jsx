@@ -1,62 +1,137 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import MonacoEditor from "@monaco-editor/react";
 
-function Editor({ socketRef, roomId }) {
+function Editor({ socketRef, roomId, isSocketReady }) {
+  const editorRef = useRef(null);
+  const debounceRef = useRef(null);
+
+  const versionRef = useRef(0);
+  const isInitializedRef = useRef(false);
+  const isSyncingRef = useRef(false);
+  const isApplyingRemoteRef = useRef(false);
+
   const [language, setLanguage] = useState("cpp");
-  const [code, setCode] = useState("// Write your code here!");
-  const [isLocalChange, setIsLocalChange] = useState(false);
-  const debounceTimeout = useRef(null); 
 
-  const handleEditorChange = (value) => {
-    setIsLocalChange(true);
-    setCode(value);
+  const log = (...args) => console.log("[EDITOR]", ...args);
 
-    if (debounceTimeout.current) {
-      clearTimeout(debounceTimeout.current);
-    }
+  /* --------------------------------------------------
+     SAFE EMIT
+  -------------------------------------------------- */
+  const emitCodeChange = (code) => {
+    if (!socketRef.current) return;
+    if (!isInitializedRef.current || isSyncingRef.current) return;
 
-    debounceTimeout.current = setTimeout(() => {
-      if (socketRef.current) {
-        socketRef.current.emit("codeChange", { roomId, code: value, language });
-      }
-    }, 500); 
+    log("EMIT", { version: versionRef.current, length: code.length });
+
+    socketRef.current.emit("codeChange", {
+      roomId,
+      code,
+      language,
+      version: versionRef.current,
+    });
+
+    versionRef.current += 1;
   };
 
+  /* --------------------------------------------------
+     MONACO CHANGE (USER ONLY)
+  -------------------------------------------------- */
+  const handleEditorChange = (value) => {
+    if (isApplyingRemoteRef.current) {
+      log("IGNORED change (remote)");
+      return;
+    }
 
+    const code = value ?? "";
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      emitCodeChange(code);
+    }, 120);
+  };
+
+  /* --------------------------------------------------
+     APPLY REMOTE STATE DIRECTLY TO MONACO
+  -------------------------------------------------- */
+  const applyRemoteState = ({ code, language, version }) => {
+    if (!editorRef.current) return;
+
+    log("APPLY REMOTE", { version, length: code.length });
+
+    isApplyingRemoteRef.current = true;
+    isSyncingRef.current = false;
+
+    versionRef.current = version;
+    setLanguage(language);
+
+    const model = editorRef.current.getModel();
+    if (model && model.getValue() !== code) {
+      model.pushEditOperations(
+        [],
+        [{ range: model.getFullModelRange(), text: code }],
+        () => null
+      );
+    }
+
+    setTimeout(() => {
+      isApplyingRemoteRef.current = false;
+    }, 0);
+  };
+
+  /* --------------------------------------------------
+     SOCKET LISTENERS
+  -------------------------------------------------- */
   useEffect(() => {
-    if (!socketRef.current) return;
+    if (!isSocketReady || !socketRef.current) return;
 
-    const handleCodeUpdate = ({ code, language }) => {
-      if (!isLocalChange) {
-        setCode(code);
-        setLanguage(language);
-      }
-      setIsLocalChange(false);
-    };
+    const socket = socketRef.current;
+    log("Socket ready → listeners attached");
 
-    const handleInitializeCode = (data) => {
-      const { code, language } = data;
-      setCode(code);
-      setLanguage(language);
-    };
+    socket.on("initializeCode", (data) => {
+      log("INITIALIZE", data.version);
+      isInitializedRef.current = true;
+      applyRemoteState(data);
+    });
 
-    socketRef.current.emit("codeChange", { roomId, code, language });
-    socketRef.current.on("codeUpdate", handleCodeUpdate);
-    console.log("Setting up listener for initializeCode");
-    socketRef.current.on("initializeCode", handleInitializeCode);
+    socket.on("codeUpdate", (data) => {
+      log("SERVER UPDATE", data.version);
+      applyRemoteState(data);
+    });
+
+    socket.on("syncRequired", (data) => {
+      log("SYNC REQUIRED", data.version);
+      isSyncingRef.current = true;
+      applyRemoteState(data);
+    });
 
     return () => {
-      socketRef.current.off("codeUpdate", handleCodeUpdate);
-      socketRef.current.off("initializeCode", handleInitializeCode);
+      socket.off("initializeCode");
+      socket.off("codeUpdate");
+      socket.off("syncRequired");
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [socketRef, roomId]);
+  }, [isSocketReady]);
 
+  /* --------------------------------------------------
+     LANGUAGE CHANGE
+  -------------------------------------------------- */
+  const handleLanguageChange = (e) => {
+    const newLang = e.target.value;
+    setLanguage(newLang);
+
+    if (!editorRef.current) return;
+    emitCodeChange(editorRef.current.getValue());
+  };
+
+  /* --------------------------------------------------
+     RENDER
+  -------------------------------------------------- */
   return (
-    <div className="p-4">
+    <div className="p-4 h-full flex flex-col">
       <select
         value={language}
-        onChange={(e) => setLanguage(e.target.value)}
-        className="mb-4 p-2 border rounded"
+        onChange={handleLanguageChange}
+        className="mb-2 p-2 border rounded"
       >
         <option value="cpp">C++</option>
         <option value="java">Java</option>
@@ -67,17 +142,21 @@ function Editor({ socketRef, roomId }) {
         <option value="css">CSS</option>
       </select>
 
-      <div className="h-screen rounded overflow-hidden">
+      <div className="flex-1 border rounded overflow-hidden">
         <MonacoEditor
           height="100%"
+          defaultValue=""
           language={language}
-          value={code}
           theme="vs-dark"
           onChange={handleEditorChange}
+          onMount={(editor) => {
+            editorRef.current = editor;
+            log("Monaco mounted");
+          }}
           options={{
             fontSize: 14,
-            automaticLayout: true,
             minimap: { enabled: false },
+            automaticLayout: true,
           }}
         />
       </div>
