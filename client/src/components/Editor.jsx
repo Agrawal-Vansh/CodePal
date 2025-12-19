@@ -4,13 +4,14 @@ import MonacoEditor from "@monaco-editor/react";
 function Editor({ socketRef, roomId, isSocketReady }) {
   const editorRef = useRef(null);
   const debounceRef = useRef(null);
-
+  
   const versionRef = useRef(0);
   const isInitializedRef = useRef(false);
   const isSyncingRef = useRef(false);
   const isApplyingRemoteRef = useRef(false);
-
+  
   const [language, setLanguage] = useState("cpp");
+  const DEBOUNCE_MS = 250;
 
   const log = (...args) => console.log("[EDITOR]", ...args);
 
@@ -47,7 +48,7 @@ function Editor({ socketRef, roomId, isSocketReady }) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       emitCodeChange(code);
-    }, 120);
+    }, DEBOUNCE_MS);
   };
 
   /* --------------------------------------------------

@@ -1,11 +1,17 @@
 import { io } from "socket.io-client";
 
-const socket = () => {
-  return io(import.meta.env.VITE_SERVER_URL, {
-    transports: ["websocket"],
-    reconnectionAttempts: Infinity,
-    timeout: 10000,
-  });
+let socketInstance = null;
+
+const createSocket = () => {
+  if (!socketInstance) {
+    socketInstance = io(import.meta.env.VITE_SERVER_URL, {
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      timeout: 10000,
+    });
+  }
+  return socketInstance;
 };
 
-export default socket;
+export default createSocket;

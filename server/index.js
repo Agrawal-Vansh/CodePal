@@ -52,6 +52,10 @@ io.on("connection", (socket) => {
 
   /* ---------- JOIN ---------- */
   socket.on("join", ({ roomId, username }) => {
+          for (const room of socket.rooms) {
+        if (room !== socket.id) socket.leave(room);
+      }
+
     console.log("➡️ JOIN:", socket.id, roomId, username);
 
     userSocketMap[socket.id] = username;
@@ -97,6 +101,11 @@ io.on("connection", (socket) => {
       socket.emit("syncRequired", room);
       return;
     }
+
+    if (room.code === code && room.language === language) {
+      return; // no-op update
+    }
+
 
     // Accept update
     roomData[roomId] = {
