@@ -15,9 +15,7 @@ function Editor({ socketRef, roomId, isSocketReady }) {
 
   const log = (...args) => console.log("[EDITOR]", ...args);
 
-  /* --------------------------------------------------
-     SAFE EMIT
-  -------------------------------------------------- */
+
   const emitCodeChange = (code) => {
     if (!socketRef.current) return;
     if (!isInitializedRef.current || isSyncingRef.current) return;
@@ -34,9 +32,7 @@ function Editor({ socketRef, roomId, isSocketReady }) {
     versionRef.current += 1;
   };
 
-  /* --------------------------------------------------
-     MONACO CHANGE (USER ONLY)
-  -------------------------------------------------- */
+    //  MONACO CHANGE (USER ONLY)
   const handleEditorChange = (value) => {
     if (isApplyingRemoteRef.current) {
       log("IGNORED change (remote)");
@@ -51,9 +47,7 @@ function Editor({ socketRef, roomId, isSocketReady }) {
     }, DEBOUNCE_MS);
   };
 
-  /* --------------------------------------------------
-     APPLY REMOTE STATE DIRECTLY TO MONACO
-  -------------------------------------------------- */
+    //  APPLY REMOTE STATE DIRECTLY TO MONACO
   const applyRemoteState = ({ code, language, version }) => {
     if (!editorRef.current) return;
 

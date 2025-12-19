@@ -15,7 +15,7 @@ function EditorPage() {
   const [isSocketReady, setIsSocketReady] = useState(false);
 
   useEffect(() => {
-    // 🚨 HARD GUARD
+    // HARD GUARD
     if (!location.state?.userName) {
       navigate("/home");
       return;

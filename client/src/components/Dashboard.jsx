@@ -5,13 +5,7 @@ import { toast } from "react-hot-toast";
 import Logo from "../assets/Logo.png";
 import User from "./User";
 
-/*
-  Dashboard responsibility:
-  - Display users
-  - Copy room ID
-  - Signal leave intent
-  NOT navigation or socket control
-*/
+  // NOT navigation or socket control
 
 function Dashboard({
   users = [],

@@ -1,4 +1,3 @@
-// Room.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -20,7 +19,7 @@ function Room() {
   const username = location.state?.userName;
 
   useEffect(() => {
-    // 🔐 HARD GUARD
+    //HARD GUARD
     if (!username) {
       navigate("/home");
       return;
@@ -58,7 +57,7 @@ function Room() {
       navigate("/home");
     };
 
-    // 🔌 Attach listeners
+    // listeners
     socket.on("connect", handleConnect);
     socket.on("newUserJoined", handleNewUserJoined);
     socket.on("disconnected", handleDisconnected);

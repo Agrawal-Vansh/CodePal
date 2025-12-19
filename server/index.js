@@ -6,12 +6,9 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-/* ================= CONFIG ================= */
-
 const PORT = process.env.PORT || 3000;
 const CLIENT_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
 
-/* ================= APP ================= */
 
 const app = express();
 const server = http.createServer(app);
@@ -33,7 +30,6 @@ const userSocketMap = {};
 // roomId -> { code, language, version }
 const roomData = {};
 
-/* ================= HELPERS ================= */
 
 const getUsersInRoom = (roomId) => {
   const room = io.sockets.adapter.rooms.get(roomId);
@@ -48,7 +44,7 @@ const getUsersInRoom = (roomId) => {
 /* ================= SOCKET ================= */
 
 io.on("connection", (socket) => {
-  console.log("🟢 CONNECT:", socket.id);
+  console.log("CONNECT:", socket.id);
 
   /* ---------- JOIN ---------- */
   socket.on("join", ({ roomId, username }) => {
@@ -90,14 +86,14 @@ io.on("connection", (socket) => {
       return;
     }
 
-    console.log("✏️ CODE CHANGE");
+    console.log(" CODE CHANGE");
     console.log("   socket:", socket.id);
     console.log("   client version:", version);
     console.log("   server version:", room.version);
 
     // Reject stale updates
     if (version !== room.version) {
-      console.log("⛔ STALE UPDATE → syncRequired");
+      console.log("STALE UPDATE → syncRequired");
       socket.emit("syncRequired", room);
       return;
     }
@@ -137,13 +133,13 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("🔴 DISCONNECT:", socket.id);
+    console.log(" DISCONNECT:", socket.id);
   });
 });
 
 /* ================= START ================= */
 
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on ${PORT}`);
-  console.log(`🌍 CORS allowed: ${CLIENT_ORIGIN}`);
+  console.log(`Server running on ${PORT}`);
+  console.log(`CORS allowed: ${CLIENT_ORIGIN}`);
 });
